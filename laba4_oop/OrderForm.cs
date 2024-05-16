@@ -15,7 +15,7 @@ namespace laba4_oop
     public partial class OrderForm : Form
     {
         private Order _order;
-        private string _filePath = "order.dat"; // Шлях до файлу для збереження
+        private string _filePath = "order.txt"; // Шлях до файлу для збереження
         private List<Chef> _chefs = new List<Chef>(); // Список кухарів
 
         public OrderForm()
@@ -157,40 +157,88 @@ namespace laba4_oop
         {
             try
             {
-                BinaryFormatter formatter = new BinaryFormatter();
-                using (FileStream stream = new FileStream(_filePath, FileMode.Create, FileAccess.Write))
+                using (StreamWriter writer = new StreamWriter(_filePath))
                 {
-                    formatter.Serialize(stream, _order); // Сериализуем весь объект _order
+                    writer.WriteLine($"CafeName: {_order.CafeName}");
+                    writer.WriteLine($"OrderDate: {_order.OrderDate.ToString("yyyy-MM-dd HH:mm:ss")}");
+
+                    foreach (Dish dish in _order.Dishes)
+                    {
+                        writer.WriteLine($"Dish:");
+                        writer.WriteLine($"\tName: {dish.Name}");
+                        writer.WriteLine($"\tPrice: {dish.Price}");
+                        writer.WriteLine($"\tChef: {dish.Chef.FirstName} {dish.Chef.LastName}");
+                    }
                 }
             }
             catch (Exception ex)
             {
+                MessageBox.Show("Помилка під час збереження!");
             }
         }
 
         // Завантаження даних з файлу
         private void LoadOrder()
-{
-    try
-    {
-        if (File.Exists(_filePath))
         {
-            BinaryFormatter formatter = new BinaryFormatter();
-            using (FileStream stream = new FileStream(_filePath, FileMode.Open, FileAccess.Read))
+            try
             {
-                _order = (Order)formatter.Deserialize(stream); // Десериализуем весь объект _order
+                if (File.Exists(_filePath))
+                {
+                    using (StreamReader reader = new StreamReader(_filePath))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (line.StartsWith("CafeName:"))
+                            {
+                                _order.CafeName = line.Substring("CafeName: ".Length);
+                            }
+                            else if (line.StartsWith("OrderDate:"))
+                            {
+                                _order.OrderDate = DateTime.Parse(line.Substring("OrderDate: ".Length));
+                            }
+                            else if (line.StartsWith("Dish:"))
+                            {
+                                string name = "";
+                                int price = 0;
+                                Chef chef = null;
+
+                                while ((line = reader.ReadLine()) != null && !line.StartsWith("Dish:"))
+                                {
+                                    if (line.StartsWith("\tName:"))
+                                    {
+                                        name = line.Substring("\tName: ".Length);
+                                    }
+                                    else if (line.StartsWith("\tPrice:"))
+                                    {
+                                        price = (int)double.Parse(line.Substring("\tPrice: ".Length)); // Преобразование в int
+                                    }
+                                    else if (line.StartsWith("\tChef:"))
+                                    {
+                                        string[] chefParts = line.Substring("\tChef: ".Length).Split(' ');
+                                        chef = new Chef(chefParts[0], chefParts[1]);
+                                    }
+                                }
+
+                                // Передача всех параметров в конструктор
+                                Dish dish = new Dish(name, price, 0, Category.Невідома, chef); // Передача всех параметров в конструктор
+
+                                _order.AddDish(dish);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Якщо файл не існує, створити нове замовлення
+                    _order = new Order("CafeName", DateTime.Now);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Помилка під час завантаження!");
             }
         }
-        else
-        {
-            // Якщо файл не існує, створити нове замовлення
-            _order = new Order("CafeName", DateTime.Now);
-        }
-    }
-    catch (Exception ex)
-    {
-    }
-}
 
         // Збереження списку кухарів у файл
         private void SaveChefs()
