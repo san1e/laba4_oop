@@ -168,6 +168,8 @@ namespace laba4_oop
                         writer.WriteLine($"\tName: {dish.Name}");
                         writer.WriteLine($"\tPrice: {dish.Price}");
                         writer.WriteLine($"\tChef: {dish.Chef.FirstName} {dish.Chef.LastName}");
+                        // Добавьте строку с временем приготовления
+                        writer.WriteLine($"\tCookingTime: {dish.CookingTime}"); // Предполагается, что у Dish есть свойство CookingTime
                     }
                 }
             }
@@ -202,7 +204,7 @@ namespace laba4_oop
                                 string name = "";
                                 int price = 0;
                                 Chef chef = null;
-
+                                int cookingTime = 0;
                                 while ((line = reader.ReadLine()) != null && !line.StartsWith("Dish:"))
                                 {
                                     if (line.StartsWith("\tName:"))
@@ -213,6 +215,10 @@ namespace laba4_oop
                                     {
                                         price = (int)double.Parse(line.Substring("\tPrice: ".Length)); // Преобразование в int
                                     }
+                                    else if (line.StartsWith("\tCookingTime:"))
+                                    {
+                                        cookingTime = int.Parse(line.Substring("\tCookingTime: ".Length)); // Чтение времени приготовления
+                                    }
                                     else if (line.StartsWith("\tChef:"))
                                     {
                                         string[] chefParts = line.Substring("\tChef: ".Length).Split(' ');
@@ -221,7 +227,7 @@ namespace laba4_oop
                                 }
 
                                 // Передача всех параметров в конструктор
-                                Dish dish = new Dish(name, price, 0, Category.Невідома, chef); // Передача всех параметров в конструктор
+                                Dish dish = new Dish(name, price, cookingTime, Category.Невідома, chef); // Передача всех параметров в конструктор
 
                                 _order.AddDish(dish);
                             }
