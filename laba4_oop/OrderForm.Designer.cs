@@ -31,7 +31,6 @@
             this.components = new System.ComponentModel.Container();
             this.cafeNameTextBox = new System.Windows.Forms.TextBox();
             this.orderDateTimePicker = new System.Windows.Forms.DateTimePicker();
-            this.dishesListBox = new System.Windows.Forms.ListBox();
             this.addDishButton = new System.Windows.Forms.Button();
             this.editDishButton = new System.Windows.Forms.Button();
             this.errorProvider1 = new System.Windows.Forms.ErrorProvider(this.components);
@@ -39,6 +38,9 @@
             this.editChefButton = new System.Windows.Forms.Button();
             this.saveButton = new System.Windows.Forms.Button();
             this.chefComboBox = new System.Windows.Forms.ComboBox();
+            this.dishComboBox = new System.Windows.Forms.ComboBox();
+            this.dishesListBox = new System.Windows.Forms.ListBox();
+            this.orderListBox = new System.Windows.Forms.ListBox();
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -58,14 +60,6 @@
             this.orderDateTimePicker.Size = new System.Drawing.Size(236, 20);
             this.orderDateTimePicker.TabIndex = 1;
             this.orderDateTimePicker.ValueChanged += new System.EventHandler(this.orderDateTimePicker_ValueChanged);
-            // 
-            // dishesListBox
-            // 
-            this.dishesListBox.FormattingEnabled = true;
-            this.dishesListBox.Location = new System.Drawing.Point(12, 64);
-            this.dishesListBox.Name = "dishesListBox";
-            this.dishesListBox.Size = new System.Drawing.Size(236, 173);
-            this.dishesListBox.TabIndex = 2;
             // 
             // addDishButton
             // 
@@ -130,11 +124,38 @@
             this.chefComboBox.TabIndex = 8;
             this.chefComboBox.Text = "Chefs";
             // 
+            // dishComboBox
+            // 
+            this.dishComboBox.FormattingEnabled = true;
+            this.dishComboBox.Location = new System.Drawing.Point(14, 358);
+            this.dishComboBox.Name = "dishComboBox";
+            this.dishComboBox.Size = new System.Drawing.Size(233, 21);
+            this.dishComboBox.TabIndex = 9;
+            this.dishComboBox.Text = "Dish";
+            // 
+            // dishesListBox
+            // 
+            this.dishesListBox.FormattingEnabled = true;
+            this.dishesListBox.Location = new System.Drawing.Point(12, 64);
+            this.dishesListBox.Name = "dishesListBox";
+            this.dishesListBox.Size = new System.Drawing.Size(236, 173);
+            this.dishesListBox.TabIndex = 2;
+            // 
+            // orderListBox
+            // 
+            this.orderListBox.FormattingEnabled = true;
+            this.orderListBox.Location = new System.Drawing.Point(254, 64);
+            this.orderListBox.Name = "orderListBox";
+            this.orderListBox.Size = new System.Drawing.Size(416, 173);
+            this.orderListBox.TabIndex = 10;
+            // 
             // OrderForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(307, 363);
+            this.ClientSize = new System.Drawing.Size(767, 406);
+            this.Controls.Add(this.orderListBox);
+            this.Controls.Add(this.dishComboBox);
             this.Controls.Add(this.chefComboBox);
             this.Controls.Add(this.saveButton);
             this.Controls.Add(this.editChefButton);
@@ -156,7 +177,6 @@
         #endregion
         private System.Windows.Forms.TextBox cafeNameTextBox;
         private System.Windows.Forms.DateTimePicker orderDateTimePicker;
-        private System.Windows.Forms.ListBox dishesListBox;
         private System.Windows.Forms.Button addDishButton;
         private System.Windows.Forms.Button editDishButton;
         private System.Windows.Forms.ErrorProvider errorProvider1;
@@ -164,5 +184,8 @@
         private System.Windows.Forms.Button editChefButton;
         private System.Windows.Forms.Button saveButton;
         private System.Windows.Forms.ComboBox chefComboBox;
+        private System.Windows.Forms.ComboBox dishComboBox;
+        private System.Windows.Forms.ListBox dishesListBox;
+        private System.Windows.Forms.ListBox orderListBox;
     }
 }

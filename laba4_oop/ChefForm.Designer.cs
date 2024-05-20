@@ -91,6 +91,7 @@
             this.Name = "ChefForm";
             this.Text = "Повар";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.ChefForm_FormClosing);
+            this.Load += new System.EventHandler(this.ChefForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.errorProvider1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

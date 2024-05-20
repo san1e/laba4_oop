@@ -1,4 +1,6 @@
-﻿using System;
+﻿using laba4_dll2.Classes;
+using laba4_dll2.DTO;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -12,48 +14,38 @@ namespace laba4_oop
 {
     public partial class DishForm : Form
     {
-        public Dish Dish { get; private set; }
+        public DishDTO DishDTO { get; private set; }
 
         public DishForm(List<Chef> chefs, Dish dish = null)
         {
             InitializeComponent();
 
-            // Заповнення ComboBox для категорій
             categoryComboBox.Items.AddRange(Enum.GetNames(typeof(Category)));
-            if (categoryComboBox.Items.Count > 0)
-            {
-                categoryComboBox.SelectedIndex = 0;
-            }
+            categoryComboBox.SelectedIndex = 0;
 
-            // Заповнення ComboBox для кухарів
             chefComboBox.Items.AddRange(chefs.ToArray());
-            if (chefComboBox.Items.Count > 0)
-            {
-                chefComboBox.SelectedIndex = 0;
-            }
+            chefComboBox.SelectedIndex = 0;
 
-            if (dish != null) // Якщо передана страва, заповнити поля
+            if (dish != null)
             {
-                Dish = dish;
-                nameTextBox.Text = Dish.Name;
-                priceTextBox.Text = Dish.Price.ToString();
-                cookingTimeTextBox.Text = Dish.CookingTime.ToString();
-                categoryComboBox.SelectedIndex = (int)Dish.Category;
-                chefComboBox.SelectedItem = Dish.Chef;
+                DishDTO = new DishDTO
+                {
+                    Name = dish.Name,
+                    Price = dish.Price,
+                    CookingTime = dish.CookingTime,
+                    Category = dish.Category,
+                    Chef = dish.Chef
+                };
+
+                nameTextBox.Text = DishDTO.Name;
+                priceTextBox.Text = DishDTO.Price.ToString();
+                cookingTimeTextBox.Text = DishDTO.CookingTime.ToString();
+                categoryComboBox.SelectedItem = DishDTO.Category;
+                chefComboBox.SelectedItem = DishDTO.Chef;
             }
             else
             {
-                // Проверка на пустой список chefs
-                if (chefs.Count > 0)
-                {
-                    Dish = new Dish("", 0, 0, Category.ХолодніЗакуски, chefs[0]);
-                }
-                else
-                {
-                    // Здесь можно создать Dish с null поваром или  
-                    // вывести сообщение пользователю 
-                    Dish = new Dish("", 0, 0, Category.ХолодніЗакуски, null);
-                }
+                DishDTO = new DishDTO { Chef = chefs[0] };
             }
         }
 
@@ -61,11 +53,24 @@ namespace laba4_oop
         {
             if (ValidateInput())
             {
-                Dish.Name = nameTextBox.Text;
-                Dish.Price = int.Parse(priceTextBox.Text);
-                Dish.CookingTime = int.Parse(cookingTimeTextBox.Text);
-                Dish.Category = (Category)categoryComboBox.SelectedIndex;
-                Dish.Chef = (Chef)chefComboBox.SelectedItem;
+                DishDTO.Name = nameTextBox.Text;
+                DishDTO.Price = int.Parse(priceTextBox.Text);
+                DishDTO.CookingTime = int.Parse(cookingTimeTextBox.Text);
+
+                // Переконайтеся, що SelectedItem не null
+                if (categoryComboBox.SelectedItem != null)
+                {
+                    string categoryName = categoryComboBox.SelectedItem.ToString();
+                    // Перетворюємо рядок в значення Category
+                    DishDTO.Category = (Category)Enum.Parse(typeof(Category), categoryName);
+                }
+                else
+                {
+                    // Обробка ситуації, коли SelectedItem дорівнює null
+                    DishDTO.Category = Category.Невідома;
+                }
+
+                DishDTO.Chef = (Chef)chefComboBox.SelectedItem;
 
                 DialogResult = DialogResult.OK;
                 Close();
@@ -78,7 +83,6 @@ namespace laba4_oop
             Close();
         }
 
-        // Валідація введених даних
         private bool ValidateInput()
         {
             if (string.IsNullOrWhiteSpace(nameTextBox.Text))
@@ -113,5 +117,11 @@ namespace laba4_oop
 
             return true;
         }
+
+        private void DishForm_Load(object sender, EventArgs e)
+        {
+
+        }
+        // ... (інший код DishForm)
     }
 }

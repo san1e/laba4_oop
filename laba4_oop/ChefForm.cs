@@ -1,4 +1,6 @@
-﻿using System;
+﻿using laba4_dll2.Classes;
+using laba4_dll2.DTO;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -12,34 +14,33 @@ namespace laba4_oop
 {
     public partial class ChefForm : Form
     {
-        public Chef Chef { get; private set; }
-
-        public ChefForm()
-        {
-            InitializeComponent();
-            Chef = new Chef("", "");
-        }
+        public ChefDTO ChefDTO { get; private set; }
 
         public ChefForm(Chef chef = null)
         {
             InitializeComponent();
 
-            if (chef != null) // Якщо переданий кухар, заповнити поля
+            if (chef != null)
             {
-                Chef = chef;
-                firstNameTextBox.Text = Chef.FirstName;
-                lastNameTextBox.Text = Chef.LastName;
+                ChefDTO = new ChefDTO
+                {
+                    FirstName = chef.FirstName,
+                    LastName = chef.LastName
+                };
+
+                firstNameTextBox.Text = ChefDTO.FirstName;
+                lastNameTextBox.Text = ChefDTO.LastName;
             }
             else
             {
-                Chef = new Chef("", "");
+                ChefDTO = new ChefDTO();
             }
         }
 
         private void saveButton_Click(object sender, EventArgs e)
         {
-            Chef.FirstName = firstNameTextBox.Text;
-            Chef.LastName = lastNameTextBox.Text;
+            ChefDTO.FirstName = firstNameTextBox.Text;
+            ChefDTO.LastName = lastNameTextBox.Text;
 
             DialogResult = DialogResult.OK;
             Close();
@@ -58,24 +59,22 @@ namespace laba4_oop
                 DialogResult result = MessageBox.Show("Зберегти зміни?", "Завершення", MessageBoxButtons.YesNoCancel);
                 if (result == DialogResult.Yes)
                 {
-                    // Устанавливаем DialogResult.OK для сохранения
                     DialogResult = DialogResult.OK;
-                    e.Cancel = false; // Закрываем форму
+                    e.Cancel = false;
                 }
                 else if (result == DialogResult.No)
                 {
-                    e.Cancel = false; // Закрываем форму
+                    e.Cancel = false;
                 }
                 else if (result == DialogResult.Cancel)
                 {
-                    e.Cancel = true; // Не закрываем форму
+                    e.Cancel = true;
                 }
             }
         }
 
         private void firstNameTextBox_TextChanged(object sender, EventArgs e)
         {
-            // Валідація для імені кухаря: мінімальна довжина 2 символів
             if (firstNameTextBox.Text.Length < 2)
             {
                 errorProvider1.SetError(firstNameTextBox, "Ім'я кухаря повинно бути щонайменше 2 символи");
@@ -88,7 +87,6 @@ namespace laba4_oop
 
         private void lastNameTextBox_TextChanged(object sender, EventArgs e)
         {
-            // Валідація для прізвища кухаря: мінімальна довжина 2 символів
             if (lastNameTextBox.Text.Length < 2)
             {
                 errorProvider1.SetError(lastNameTextBox, "Прізвище кухаря повинно бути щонайменше 2 символи");
@@ -98,5 +96,12 @@ namespace laba4_oop
                 errorProvider1.SetError(lastNameTextBox, "");
             }
         }
+
+        private void ChefForm_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        // ... (інший код ChefForm)
     }
 }

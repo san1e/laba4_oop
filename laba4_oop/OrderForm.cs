@@ -5,52 +5,78 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Text.Json;
+using laba4_oop;
+using laba4_dll2.Classes;
+using laba4_dll2.DTO;
 
 namespace laba4_oop
 {
     public partial class OrderForm : Form
     {
-        private Order _order;
-        private string _filePath = "order.txt"; // Шлях до файлу для збереження
-        private List<Chef> _chefs = new List<Chef>(); // Список кухарів
+        private List<Order> orders = new List<Order>();
+        private string _ordersFilePath = "orders.json";
+        private string _dishesFilePath = "dishes.json";
+        private OrderDTO _orderDTO;
+        private List<Chef> _chefs = new List<Chef>();
+        private List<Dish> _dishes = new List<Dish>(); // Список страв
 
         public OrderForm()
         {
             InitializeComponent();
-            _order = new Order("CafeName", DateTime.Now);
-            // Завантаження даних з файлу при запуску
-            LoadOrder();
-            LoadChefs(); // Завантаження списку кухарів
+            _orderDTO = new OrderDTO { CafeName = "CafeName", OrderDate = DateTime.Now };
 
-            // Ініціалізація елементів керування
-            UpdateDishList(); // Теперь _order не null
-            cafeNameTextBox.Text = _order.CafeName;
-            orderDateTimePicker.Value = _order.OrderDate;
+            LoadOrders();
+            LoadChefs();
+            LoadDishes();
 
-            // Заповнення ComboBox для кухарів
+            UpdateDishList();
+            cafeNameTextBox.Text = _orderDTO.CafeName;
+            orderDateTimePicker.Value = _orderDTO.OrderDate;
+
             UpdateChefComboBox();
+            UpdateDishComboBox();
+            UpdateOrderListBox(); // Оновлення ComboBox для страв
         }
+        private void UpdateOrderListBox()
+        {
+            orderListBox.Items.Clear();
+            foreach (var order in orders)
+            {
+                string orderInfo = order.ToShortString() + "\n"; // Додаємо перехід на новий рядок
 
+                // Додаємо список страв
+                foreach (var dish in order.Dishes)
+                {
+                    orderInfo += $"  - {dish.Name}\n";
+                }
+
+                orderListBox.Items.Add(orderInfo);
+            }
+        }
         private void UpdateDishList()
         {
             dishesListBox.Items.Clear();
-            foreach (var dish in _order.Dishes)
+            foreach (var dishDTO in _dishes)
             {
-                dishesListBox.Items.Add($"{dish.Name} ({dish.Price} грн)");
+                dishesListBox.Items.Add($"{dishDTO.Name} ({dishDTO.Price} грн)");
             }
         }
 
         private void addDishButton_Click(object sender, EventArgs e)
         {
-            DishForm dishForm = new DishForm(_chefs); // Передача списку кухарів
+            DishForm dishForm = new DishForm(_chefs);
             if (dishForm.ShowDialog() == DialogResult.OK)
             {
-                _order.AddDish(dishForm.Dish);
-                UpdateDishList();
+                _dishes.Add(dishForm.DishDTO.ToDish());
+                SaveDishes();
+                UpdateDishComboBox();
+
+                _orderDTO.Dishes.Add(dishForm.DishDTO);
+                UpdateDishList(); // Додано оновлення dishList
             }
         }
 
@@ -58,12 +84,21 @@ namespace laba4_oop
         {
             if (dishesListBox.SelectedIndex != -1)
             {
-                Dish selectedDish = _order.Dishes[dishesListBox.SelectedIndex];
-                DishForm dishForm = new DishForm(_chefs, selectedDish); // Передача списку кухарів та страви
+                DishDTO selectedDishDTO = _orderDTO.Dishes[dishesListBox.SelectedIndex];
+                DishForm dishForm = new DishForm(_chefs, selectedDishDTO.ToDish());
                 if (dishForm.ShowDialog() == DialogResult.OK)
                 {
-                    _order.Dishes[dishesListBox.SelectedIndex] = dishForm.Dish;
+                    _orderDTO.Dishes[dishesListBox.SelectedIndex] = dishForm.DishDTO;
                     UpdateDishList();
+
+                    // Оновлення страви в списку страв
+                    int dishIndex = _dishes.FindIndex(d => d.Name == selectedDishDTO.Name);
+                    if (dishIndex != -1)
+                    {
+                        _dishes[dishIndex] = dishForm.DishDTO.ToDish();
+                        SaveDishes(); // Зберігаємо зміни у файл
+                        UpdateDishComboBox(); // Оновлюємо ComboBox
+                    }
                 }
             }
         }
@@ -73,7 +108,7 @@ namespace laba4_oop
             ChefForm chefForm = new ChefForm();
             if (chefForm.ShowDialog() == DialogResult.OK)
             {
-                _chefs.Add(chefForm.Chef);
+                _chefs.Add(chefForm.ChefDTO.ToChef());
                 UpdateChefComboBox();
             }
         }
@@ -83,14 +118,13 @@ namespace laba4_oop
             if (chefComboBox.SelectedIndex != -1)
             {
                 Chef selectedChef = (Chef)chefComboBox.SelectedItem;
-                ChefForm chefForm = new ChefForm(selectedChef); // Открываем ChefForm с выбранным поваром
+                ChefForm chefForm = new ChefForm(selectedChef);
                 if (chefForm.ShowDialog() == DialogResult.OK)
                 {
-                    // Обновляем данные выбранного повара
-                    int chefIndex = _chefs.IndexOf(selectedChef); // Находим индекс повара
-                    _chefs[chefIndex] = chefForm.Chef; // Обновляем данные
+                    int chefIndex = _chefs.IndexOf(selectedChef);
+                    _chefs[chefIndex] = chefForm.ChefDTO.ToChef();
 
-                    UpdateChefComboBox(); // Обновление ComboBoxes в DishForm
+                    UpdateChefComboBox();
                 }
             }
             else
@@ -99,7 +133,6 @@ namespace laba4_oop
             }
         }
 
-        // Обновление chefComboBox
         private void UpdateChefComboBox()
         {
             chefComboBox.Items.Clear();
@@ -110,9 +143,38 @@ namespace laba4_oop
             }
         }
 
+        private void UpdateDishComboBox()
+        {
+            dishComboBox.Items.Clear();
+            dishComboBox.Items.AddRange(_dishes.ToArray());
+            if (dishComboBox.Items.Count > 0)
+            {
+                dishComboBox.SelectedIndex = 0;
+            }
+        }
+
+        // Додавання страви до замовлення
+        private void addDishToOrderButton_Click(object sender, EventArgs e)
+        {
+            if (dishComboBox.SelectedItem != null)
+            {
+                Dish selectedDish = (Dish)dishComboBox.SelectedItem;
+                DishDTO dishDTO = new DishDTO
+                {
+                    Name = selectedDish.Name,
+                    Price = selectedDish.Price,
+                    CookingTime = selectedDish.CookingTime,
+                    Category = selectedDish.Category,
+                    Chef = selectedDish.Chef
+                };
+
+                _orderDTO.Dishes.Add(dishDTO);
+                UpdateDishList();
+            }
+        }
+
         private void saveButton_Click(object sender, EventArgs e)
         {
-            // Збереження даних о кафе і даті
             SaveOrder();
         }
 
@@ -124,7 +186,8 @@ namespace laba4_oop
                 if (result == DialogResult.Yes)
                 {
                     SaveOrder();
-                    SaveChefs(); // Збереження списку кухарів
+                    SaveChefs();
+                    SaveDishes();
                 }
                 else if (result == DialogResult.Cancel)
                 {
@@ -135,7 +198,6 @@ namespace laba4_oop
 
         private void cafeNameTextBox_TextChanged(object sender, EventArgs e)
         {
-            // Валідація для назви кафе: мінімальна довжина 3 символів
             if (cafeNameTextBox.Text.Length < 3)
             {
                 errorProvider1.SetError(cafeNameTextBox, "Назва кафе повинна бути щонайменше 3 символи");
@@ -143,148 +205,145 @@ namespace laba4_oop
             else
             {
                 errorProvider1.SetError(cafeNameTextBox, "");
-                _order.CafeName = cafeNameTextBox.Text;
+                _orderDTO.CafeName = cafeNameTextBox.Text;
             }
         }
 
         private void orderDateTimePicker_ValueChanged(object sender, EventArgs e)
         {
-            _order.OrderDate = orderDateTimePicker.Value;
+            _orderDTO.OrderDate = orderDateTimePicker.Value;
         }
 
-        // Збереження даних у файл
+        // Збереження замовлення
         private void SaveOrder()
         {
             try
             {
-                using (StreamWriter writer = new StreamWriter(_filePath))
-                {
-                    writer.WriteLine($"CafeName: {_order.CafeName}");
-                    writer.WriteLine($"OrderDate: {_order.OrderDate.ToString("yyyy-MM-dd HH:mm:ss")}");
+                _orderDTO.CafeName = cafeNameTextBox.Text;
+                _orderDTO.OrderDate = orderDateTimePicker.Value;
 
-                    foreach (Dish dish in _order.Dishes)
-                    {
-                        writer.WriteLine($"Dish:");
-                        writer.WriteLine($"\tName: {dish.Name}");
-                        writer.WriteLine($"\tPrice: {dish.Price}");
-                        writer.WriteLine($"\tChef: {dish.Chef.FirstName} {dish.Chef.LastName}");
-                        // Добавьте строку с временем приготовления
-                        writer.WriteLine($"\tCookingTime: {dish.CookingTime}"); // Предполагается, что у Dish есть свойство CookingTime
-                    }
-                }
+                orders.Add(_orderDTO.ToOrder()); // Додаємо замовлення до списку
+
+                string jsonString = JsonSerializer.Serialize(orders, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(_ordersFilePath, jsonString);
+
+                // Очищуємо _orderDTO для нового замовлення
+                _orderDTO = new OrderDTO { CafeName = "CafeName", OrderDate = DateTime.Now };
+                cafeNameTextBox.Text = _orderDTO.CafeName;
+                orderDateTimePicker.Value = _orderDTO.OrderDate;
+                UpdateDishList();
+                UpdateOrderListBox();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Помилка під час збереження!");
+                MessageBox.Show("Помилка під час збереження замовлення!");
             }
         }
 
-        // Завантаження даних з файлу
-        private void LoadOrder()
+        // Завантаження замовлень
+        private void LoadOrders()
         {
             try
             {
-                if (File.Exists(_filePath))
+                if (File.Exists(_ordersFilePath))
                 {
-                    using (StreamReader reader = new StreamReader(_filePath))
+                    string jsonString = File.ReadAllText(_ordersFilePath);
+                    orders = JsonSerializer.Deserialize<List<Order>>(jsonString);
+
+                    // Якщо є замовлення, завантажуємо перше як _orderDTO
+                    if (orders.Count > 0)
                     {
-                        string line;
-                        while ((line = reader.ReadLine()) != null)
+                        _orderDTO = new OrderDTO
                         {
-                            if (line.StartsWith("CafeName:"))
+                            CafeName = orders[0].CafeName,
+                            OrderDate = orders[0].OrderDate,
+                            // Завантажуємо страви для кожного замовлення:
+                            Dishes = orders[0].Dishes.Select(dish => new DishDTO
                             {
-                                _order.CafeName = line.Substring("CafeName: ".Length);
-                            }
-                            else if (line.StartsWith("OrderDate:"))
-                            {
-                                _order.OrderDate = DateTime.Parse(line.Substring("OrderDate: ".Length));
-                            }
-                            else if (line.StartsWith("Dish:"))
-                            {
-                                string name = "";
-                                int price = 0;
-                                Chef chef = null;
-                                int cookingTime = 0;
-                                while ((line = reader.ReadLine()) != null && !line.StartsWith("Dish:"))
-                                {
-                                    if (line.StartsWith("\tName:"))
-                                    {
-                                        name = line.Substring("\tName: ".Length);
-                                    }
-                                    else if (line.StartsWith("\tPrice:"))
-                                    {
-                                        price = (int)double.Parse(line.Substring("\tPrice: ".Length)); // Преобразование в int
-                                    }
-                                    else if (line.StartsWith("\tCookingTime:"))
-                                    {
-                                        cookingTime = int.Parse(line.Substring("\tCookingTime: ".Length)); // Чтение времени приготовления
-                                    }
-                                    else if (line.StartsWith("\tChef:"))
-                                    {
-                                        string[] chefParts = line.Substring("\tChef: ".Length).Split(' ');
-                                        chef = new Chef(chefParts[0], chefParts[1]);
-                                    }
-                                }
+                                Name = dish.Name,
+                                Price = dish.Price,
+                                CookingTime = dish.CookingTime,
+                                Category = dish.Category,
+                                Chef = dish.Chef
+                            }).ToList()
+                        };
 
-                                // Передача всех параметров в конструктор
-                                Dish dish = new Dish(name, price, cookingTime, Category.Невідома, chef); // Передача всех параметров в конструктор
+                        cafeNameTextBox.Text = _orderDTO.CafeName;
+                        orderDateTimePicker.Value = _orderDTO.OrderDate;
 
-                                _order.AddDish(dish);
-                            }
-                        }
+                        // Викликаємо UpdateDishList після завантаження страв
+                        UpdateDishList();
                     }
-                }
-                else
-                {
-                    // Якщо файл не існує, створити нове замовлення
-                    _order = new Order("CafeName", DateTime.Now);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Помилка під час завантаження!");
+                MessageBox.Show("Помилка під час завантаження замовлень!");
             }
         }
 
-        // Збереження списку кухарів у файл
+        // Збереження кухарів
         private void SaveChefs()
         {
             try
             {
-                using (StreamWriter writer = new StreamWriter("chefs.txt"))
-                {
-                    foreach (var chef in _chefs)
-                    {
-                        writer.WriteLine($"{chef.FirstName},{chef.LastName}");
-                    }
-                }
+                string jsonString = JsonSerializer.Serialize(_chefs);
+                File.WriteAllText("chefs.txt", jsonString);
             }
             catch (Exception ex)
             {
+                MessageBox.Show("Помилка під час збереження кухарів!");
             }
         }
 
-        // Завантаження списку кухарів з файлу
+        // Завантаження кухарів
         private void LoadChefs()
         {
             try
             {
                 if (File.Exists("chefs.txt"))
                 {
-                    using (StreamReader reader = new StreamReader("chefs.txt"))
-                    {
-                        string line;
-                        while ((line = reader.ReadLine()) != null)
-                        {
-                            string[] parts = line.Split(',');
-                            _chefs.Add(new Chef(parts[0], parts[1]));
-                        }
-                    }
+                    string jsonString = File.ReadAllText("chefs.txt");
+                    _chefs = JsonSerializer.Deserialize<List<Chef>>(jsonString);
                 }
             }
             catch (Exception ex)
             {
+                MessageBox.Show("Помилка під час завантаження кухарів!");
             }
         }
+
+        // Збереження страв
+        private void SaveDishes()
+        {
+            try
+            {
+                string jsonString = JsonSerializer.Serialize(_dishes);
+                File.WriteAllText(_dishesFilePath, jsonString);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Помилка під час збереження страв!");
+            }
+        }
+
+        // Завантаження страв
+        private void LoadDishes()
+        {
+            try
+            {
+                if (File.Exists(_dishesFilePath))
+                {
+                    string jsonString = File.ReadAllText(_dishesFilePath);
+                    _dishes = JsonSerializer.Deserialize<List<Dish>>(jsonString);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Помилка під час завантаження страв!");
+            }
+        }
+
+        // ... (інший код OrderForm)
     }
 }
