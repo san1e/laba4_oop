@@ -32,7 +32,13 @@ namespace laba4_oop
             LoadOrders();
             LoadChefs();
             LoadDishes();
+            string consoleOrdersFilePath = "E:\\Мой универ\\OOP\\Laba4\\laba4_Console\\laba4_Console\\bin\\Debug\\net6.0\\order.json";
 
+            // Завантажуємо дані з order.json
+            LoadConsoleOrders(consoleOrdersFilePath);
+
+            // Завантажуємо дані з orders.json для Windows Forms
+            LoadOrders();
             UpdateDishList();
             cafeNameTextBox.Text = _orderDTO.CafeName;
             orderDateTimePicker.Value = _orderDTO.OrderDate;
@@ -40,6 +46,51 @@ namespace laba4_oop
             UpdateChefComboBox();
             UpdateDishComboBox();
             UpdateOrderListBox(); // Оновлення ComboBox для страв
+        }
+
+        private void LoadConsoleOrders(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    string jsonString = File.ReadAllText(filePath);
+                    List<OrderDTO> consoleOrderDTOs = JsonSerializer.Deserialize<List<OrderDTO>>(jsonString);
+
+                    // Переносимо дані в orders, _chefs та _dishes
+                    foreach (var orderDTO in consoleOrderDTOs)
+                    {
+                        Order order = orderDTO.ToOrder();
+                        orders.Add(order);
+
+                        foreach (var dishDTO in orderDTO.Dishes)
+                        {
+                            Dish dish = dishDTO.ToDish();
+
+                            // Перевіряємо, чи кухар вже існує в списку
+                            if (!_chefs.Any(c => c.Equals(dish.Chef)))
+                            {
+                                _chefs.Add(dish.Chef);
+                            }
+
+                            // Перевіряємо, чи страва вже існує в списку
+                            if (!_dishes.Any(d => d.Equals(dish)))
+                            {
+                                _dishes.Add(dish);
+                            }
+                        }
+                    }
+
+                    // Зберігаємо дані в orders.json для Windows Forms
+                    SaveOrder();
+                    SaveChefs();
+                    SaveDishes();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Помилка під час завантаження даних з order.json: " + ex.Message);
+            }
         }
         private void UpdateOrderListBox()
         {
@@ -82,7 +133,7 @@ namespace laba4_oop
 
         private void editDishButton_Click(object sender, EventArgs e)
         {
-            if (dishesListBox.SelectedIndex != -1)
+            if (dishesListBox.SelectedIndex >= 0 && _orderDTO.Dishes.Count > dishesListBox.SelectedIndex)
             {
                 DishDTO selectedDishDTO = _orderDTO.Dishes[dishesListBox.SelectedIndex];
                 DishForm dishForm = new DishForm(_chefs, selectedDishDTO.ToDish());
@@ -91,15 +142,19 @@ namespace laba4_oop
                     _orderDTO.Dishes[dishesListBox.SelectedIndex] = dishForm.DishDTO;
                     UpdateDishList();
 
-                    // Оновлення страви в списку страв
                     int dishIndex = _dishes.FindIndex(d => d.Name == selectedDishDTO.Name);
                     if (dishIndex != -1)
                     {
                         _dishes[dishIndex] = dishForm.DishDTO.ToDish();
-                        SaveDishes(); // Зберігаємо зміни у файл
-                        UpdateDishComboBox(); // Оновлюємо ComboBox
+                        SaveDishes();
+                        UpdateDishComboBox();
                     }
                 }
+            }
+            else
+            {
+                // Обробка ситуації, коли елемент не вибрано або список пустий
+                MessageBox.Show("Виберіть страву для редагування.");
             }
         }
 
